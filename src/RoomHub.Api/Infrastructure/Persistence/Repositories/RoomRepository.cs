@@ -1,26 +1,37 @@
-using RoomHub.Api.Models;
+using Microsoft.EntityFrameworkCore;
+using RoomHub.Api.Domain.Rooms;
+using RoomHub.Api.Infrastructure.Persistence;
 
 namespace RoomHub.Api.Repositories;
 
-// Starter: in-memory data. It is lost when the application restarts.
-public class RoomRepository
+public class RoomRepository : IRoomRepository
 {
-    private readonly List<Room> _rooms = new();
-    private readonly object _lock = new();
+    private readonly RoomHubDbContext _context;
+
+    public RoomRepository(RoomHubDbContext context)
+    {
+        _context = context;
+    }
 
     public void Add(Room room)
     {
-        lock (_lock)
-        {
-            _rooms.Add(room);
-        }
+        _context.Rooms.Add(room);
     }
 
+    public async Task<Room?> GetByIdAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        return await _context.Rooms
+            .FirstOrDefaultAsync(
+                room => room.Id == id,
+                cancellationToken);
+    }
+
+    // Compatibilitate temporara cu RoomService.
     public Room? Get(Guid id)
     {
-        lock (_lock)
-        {
-            return _rooms.FirstOrDefault(r => r.Id == id);
-        }
+        return _context.Rooms
+            .FirstOrDefault(room => room.Id == id);
     }
 }
